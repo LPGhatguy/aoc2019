@@ -41,7 +41,7 @@ fn gcd(mut a: i64, mut b: i64) -> i64 {
     a
 }
 
-// this is kind of like a fraction simplifcation function but bad
+// this is kind of like a fraction simplifcation function
 fn simplify_sight((num, denom): (i64, i64)) -> (i64, i64) {
     if denom == 0 {
         return (num.signum(), 0);
@@ -51,21 +51,8 @@ fn simplify_sight((num, denom): (i64, i64)) -> (i64, i64) {
         return (0, denom.signum());
     }
 
-    let divisor = gcd(num, denom);
-
-    let mut new_num = num / divisor;
-    let mut new_denom = denom / divisor;
-
-    // there might be a better way to preserve our signs here
-    if num.signum() != new_num.signum() {
-        new_num = -new_num;
-    }
-
-    if denom.signum() != new_denom.signum() {
-        new_denom = -new_denom;
-    }
-
-    (new_num, new_denom)
+    let divisor = gcd(num, denom).abs();
+    (num / divisor, denom / divisor)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
