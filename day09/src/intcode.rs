@@ -37,9 +37,9 @@ pub enum Outcome {
 impl VM {
     pub fn load(&self, mode: u8, value: i32) -> i32 {
         match mode {
-            MODE_POS => self.memory[value as usize],
+            MODE_POS => self.read_ptr(value as usize),
             MODE_IMM => value,
-            MODE_REL => self.memory[self.rb + value as usize],
+            MODE_REL => self.read_ptr(self.rb + value as usize),
             _ => panic!("illegal operand mode"),
         }
     }
@@ -60,22 +60,28 @@ impl VM {
         input.split(',').map(|v| v.parse().unwrap()).collect()
     }
 
-    fn read_ptr(&self, ptr: i32) -> i32 {
-        self.memory.get(ptr as usize).copied().unwrap_or(0)
+    fn read_ptr(&self, ptr: usize) -> i32 {
+        self.memory.get(ptr).copied().unwrap_or(0)
     }
 
     fn store(&mut self, ptr: i32, value: i32) {
+        let ptr = ptr as usize;
+
+        if ptr >= self.memory.len() {
+            self.memory.resize(ptr, 0);
+        }
+
         self.memory[ptr as usize] = value;
     }
 
     fn arg_value(&mut self, mode: u8) -> i32 {
-        let value = self.memory[self.pc];
+        let value = self.read_ptr(self.pc);
         self.pc += 1;
         self.load(mode, value)
     }
 
     fn arg_raw(&mut self) -> i32 {
-        let value = self.memory[self.pc];
+        let value = self.read_ptr(self.pc);
         self.pc += 1;
         value
     }
