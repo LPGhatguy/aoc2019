@@ -35,13 +35,13 @@ pub enum Outcome {
 }
 
 impl VM {
-    pub fn load(&self, mode: u8, value: i64) -> i64 {
-        match mode {
-            MODE_POS => self.read_ptr(value as usize),
-            MODE_IMM => value,
-            MODE_REL => self.read_ptr(self.rb + value as usize),
-            _ => panic!("illegal operand mode"),
-        }
+    pub fn load_memory(&mut self, memory: impl Into<Vec<i64>>) {
+        self.memory = memory.into();
+    }
+
+    pub fn load_memory_from_tape(&mut self, tape: &str) {
+        let memory = Self::decode_tape(tape);
+        self.load_memory(memory);
     }
 
     pub fn put_input(&mut self, value: i64) {
@@ -52,23 +52,32 @@ impl VM {
         self.output.pop_front().unwrap()
     }
 
-    pub fn load_memory(&mut self, memory: impl Into<Vec<i64>>) {
-        self.memory = memory.into();
-    }
-
     pub fn decode_tape(input: &str) -> Vec<i64> {
         input.split(',').map(|v| v.parse().unwrap()).collect()
+    }
+
+    fn load(&self, mode: u8, value: i64) -> i64 {
+        match mode {
+            MODE_POS => self.read_ptr(value as usize),
+            MODE_IMM => value,
+            MODE_REL => self.read_ptr((self.rb as i64 + value) as usize),
+            _ => panic!("illegal operand mode"),
+        }
     }
 
     fn read_ptr(&self, ptr: usize) -> i64 {
         self.memory.get(ptr).copied().unwrap_or(0)
     }
 
-    fn store(&mut self, ptr: i64, value: i64) {
-        let ptr = ptr as usize;
+    fn store(&mut self, ptr: i64, ptr_mode: u8, value: i64) {
+        let ptr = match ptr_mode {
+            MODE_POS => ptr as usize,
+            MODE_REL => (self.rb as i64 + ptr) as usize,
+            _ => panic!("illegal pointer mode {}", ptr_mode),
+        };
 
         if ptr >= self.memory.len() {
-            self.memory.resize(ptr, 0);
+            self.memory.resize(ptr + 1, 0);
         }
 
         self.memory[ptr as usize] = value;
@@ -108,7 +117,7 @@ impl VM {
         loop {
             self.checkpoint();
             let inst = self.arg_raw();
-            let (op, mode1, mode2, _mode3) = decode_instruction(inst);
+            let (op, mode1, mode2, mode3) = decode_instruction(inst);
 
             match op {
                 OP_ADD => {
@@ -116,20 +125,20 @@ impl VM {
                     let b = self.arg_value(mode2);
                     let out = self.arg_raw();
 
-                    self.store(out, a + b);
+                    self.store(out, mode3, a + b);
                 }
                 OP_MUL => {
                     let a = self.arg_value(mode1);
                     let b = self.arg_value(mode2);
                     let out = self.arg_raw();
 
-                    self.store(out, a * b);
+                    self.store(out, mode3, a * b);
                 }
                 OP_INN => {
                     let out = self.arg_raw();
 
                     match self.input.pop_front() {
-                        Some(value) => self.store(out, value),
+                        Some(value) => self.store(out, mode1, value),
                         None => {
                             self.rewind();
                             return Outcome::NeedsInput;
@@ -164,9 +173,9 @@ impl VM {
                     let out = self.arg_raw();
 
                     if a < b {
-                        self.store(out, 1);
+                        self.store(out, mode3, 1);
                     } else {
-                        self.store(out, 0);
+                        self.store(out, mode3, 0);
                     }
                 }
                 OP_CME => {
@@ -175,15 +184,15 @@ impl VM {
                     let out = self.arg_raw();
 
                     if a == b {
-                        self.store(out, 1);
+                        self.store(out, mode3, 1);
                     } else {
-                        self.store(out, 0);
+                        self.store(out, mode3, 0);
                     }
                 }
                 OP_ARB => {
                     let adjust = self.arg_value(mode1);
 
-                    self.rb += adjust as usize;
+                    self.rb = (self.rb as i64 + adjust) as usize;
                 }
                 OP_END => {
                     self.rewind();
