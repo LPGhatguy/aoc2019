@@ -8,7 +8,7 @@ static INPUT: &str = include_str!("../input.txt");
 #[derive(Default)]
 struct Field {
     // space is mostly empty
-    occupied: HashSet<(usize, usize)>,
+    occupied: HashSet<(i64, i64)>,
 }
 
 impl Field {
@@ -17,7 +17,7 @@ impl Field {
             for (x, cell) in line.chars().enumerate() {
                 match cell {
                     '#' => {
-                        self.occupied.insert((x, y));
+                        self.occupied.insert((x as i64, y as i64));
                     }
                     '.' => {
                         // this space intentionally left blank
@@ -112,15 +112,7 @@ fn main() {
     for (x1, y1) in field.occupied.iter().copied() {
         let mut occupied_sightlines = BTreeMap::new();
 
-        // do you ever feel like you picked the wrong number types, but it's too
-        // late to fix it?
-        let x1 = x1 as i64;
-        let y1 = y1 as i64;
-
         for (x2, y2) in field.occupied.iter().copied() {
-            let x2 = x2 as i64;
-            let y2 = y2 as i64;
-
             // we cannot see ourselves, maybe we should buy a mirror
             if x1 == x2 && y1 == y2 {
                 continue;
