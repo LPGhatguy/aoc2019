@@ -22,9 +22,9 @@ pub struct VM {
     pub pc: usize,
     pub pc_checkpoint: usize,
     pub rb: usize,
-    pub memory: Vec<i32>,
-    pub input: VecDeque<i32>,
-    pub output: VecDeque<i32>,
+    pub memory: Vec<i64>,
+    pub input: VecDeque<i64>,
+    pub output: VecDeque<i64>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -35,7 +35,7 @@ pub enum Outcome {
 }
 
 impl VM {
-    pub fn load(&self, mode: u8, value: i32) -> i32 {
+    pub fn load(&self, mode: u8, value: i64) -> i64 {
         match mode {
             MODE_POS => self.read_ptr(value as usize),
             MODE_IMM => value,
@@ -44,27 +44,27 @@ impl VM {
         }
     }
 
-    pub fn put_input(&mut self, value: i32) {
+    pub fn put_input(&mut self, value: i64) {
         self.input.push_back(value);
     }
 
-    pub fn get_output(&mut self) -> i32 {
+    pub fn get_output(&mut self) -> i64 {
         self.output.pop_front().unwrap()
     }
 
-    pub fn load_memory(&mut self, memory: impl Into<Vec<i32>>) {
+    pub fn load_memory(&mut self, memory: impl Into<Vec<i64>>) {
         self.memory = memory.into();
     }
 
-    pub fn decode_tape(input: &str) -> Vec<i32> {
+    pub fn decode_tape(input: &str) -> Vec<i64> {
         input.split(',').map(|v| v.parse().unwrap()).collect()
     }
 
-    fn read_ptr(&self, ptr: usize) -> i32 {
+    fn read_ptr(&self, ptr: usize) -> i64 {
         self.memory.get(ptr).copied().unwrap_or(0)
     }
 
-    fn store(&mut self, ptr: i32, value: i32) {
+    fn store(&mut self, ptr: i64, value: i64) {
         let ptr = ptr as usize;
 
         if ptr >= self.memory.len() {
@@ -74,13 +74,13 @@ impl VM {
         self.memory[ptr as usize] = value;
     }
 
-    fn arg_value(&mut self, mode: u8) -> i32 {
+    fn arg_value(&mut self, mode: u8) -> i64 {
         let value = self.read_ptr(self.pc);
         self.pc += 1;
         self.load(mode, value)
     }
 
-    fn arg_raw(&mut self) -> i32 {
+    fn arg_raw(&mut self) -> i64 {
         let value = self.read_ptr(self.pc);
         self.pc += 1;
         value
@@ -197,7 +197,7 @@ impl VM {
     }
 }
 
-fn decode_instruction(instruction: i32) -> (u8, u8, u8, u8) {
+fn decode_instruction(instruction: i64) -> (u8, u8, u8, u8) {
     let mut remaining = instruction;
     let op = instruction % 100;
     remaining /= 100;
