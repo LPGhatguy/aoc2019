@@ -1,8 +1,8 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 static INPUT: &str = include_str!("../input.txt");
 
-type FormulaeBook = HashMap<&'static str, (u32, Vec<(u32, &'static str)>)>;
+type FormulaeBook = BTreeMap<&'static str, (u32, Vec<(u32, &'static str)>)>;
 
 fn div_round_up(a: u32, b: u32) -> u32 {
     (a + b - 1) / b
@@ -20,7 +20,7 @@ fn parse_chemical(value: &str) -> (u32, &str) {
 }
 
 fn parse_formulae(input: &'static str) -> FormulaeBook {
-    let mut formulae = HashMap::new();
+    let mut formulae = BTreeMap::new();
 
     for line in input.lines() {
         let mut halves = line.split("=>");
@@ -38,7 +38,7 @@ fn parse_formulae(input: &'static str) -> FormulaeBook {
 
 #[derive(Debug, Clone, Default)]
 struct Vat {
-    store: HashMap<&'static str, u32>,
+    store: BTreeMap<&'static str, u32>,
 }
 
 impl Vat {
